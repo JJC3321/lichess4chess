@@ -1,6 +1,9 @@
 import Browser from 'webextension-polyfill';
 import { getCurrentState, initStateObserver, openLichessAnalysis } from './gameStateManager';
 import { loadLanguageMessages, getCurrentLanguage } from '@src/utils/i18n';
+import { initializeGameSelectorUI } from '@src/service/ui';
+import './style.css';
+import { getSettings } from '@src/utils/settings';
 
 const initialize = async (): Promise<void> => {
   // Initialize i18n system
@@ -8,14 +11,20 @@ const initialize = async (): Promise<void> => {
   await loadLanguageMessages(lang);
   
   initStateObserver();
+  initializeGameSelectorUI();
   
   Browser.runtime.onMessage.addListener((message: any, sender: any) => {
     switch (message.action) {
       case 'getGameState':
-        return Promise.resolve({ state: getCurrentState() });
+        return getCurrentState().then(state => ({ state }));
       
       case 'openLichessAnalysis':
         return openLichessAnalysis();
+      
+      case 'settingsChanged':
+        // Handle settings changes - the game state manager will check settings on next state change
+        console.log('Settings changed, will apply on next state check');
+        return Promise.resolve({ success: true });
       
       default:
         return false;
